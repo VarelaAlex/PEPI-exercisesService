@@ -143,8 +143,5 @@ dist
 # intellij
 .idea/
 
-startEnv.js
-
-connect-mongo.sh
-
-updateExercises.js
+scripts/
+exports/
