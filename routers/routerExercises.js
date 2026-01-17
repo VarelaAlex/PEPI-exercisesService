@@ -56,16 +56,14 @@ routerExercises.get("/list/:lang", async (req, res) => {
 routerExercises.post("/list/:lang", async (req, res) => {
 
 	let { lang } = req.params;
-	let { category, representation } = req.body;
+	let { category } = req.body;
+	let representation = "MIXED"
 
 	try {
 		let query = { language: lang };
 
-		if ( category && representation ) {
-			query = {
-				...query, category: category.toUpperCase(), representation: representation.toUpperCase()
-			};
-		}
+		if (category) query.category = category.toUpperCase();
+		if (representation) query.representation = representation.toUpperCase();
 
 		const exercises = await Exercise.find(query);
 		return res.status(200).json(exercises);
@@ -75,36 +73,52 @@ routerExercises.post("/list/:lang", async (req, res) => {
 	}
 });
 
-routerExercises.get("/next/:closedOrder", async (req, res) => {
-    try {
-        const { closedOrder } = req.params;
+routerExercises.get("/guided/:lang", async (req, res) => {
+	const { lang } = req.params;
 
-        if (!closedOrder) {
-            return res.status(400).json({
-                error: {
-                    type: "badRequest",
-                    message: "Both 'closedOrder' is required."
-                }
-            });
-        }
+	const exercises = await Exercise.find({ language: lang });
 
-        const query = {
-			closedOrder: parseInt(closedOrder) + 1,
-            language: "es"
-        };
+	const representations = ["ICONIC", "MIXED", "GLOBAL", "SYMBOLIC"];
 
-        const exercise = await Exercise.findOne(query);
+	const guidedList = [];
 
-        return res.status(200).json(exercise);
-    }
-    catch (e) {
-        return res.status(500).json({
-            error: {
-                type: "internalServerError",
-                message: e.message
-            }
-        });
-    }
+	representations.forEach(rep => {
+		exercises.forEach((ex, index) => {
+			guidedList.push({
+				...ex.toObject(),
+				representation: rep,
+				index
+			});
+		});
+	});
+
+	res.json(guidedList);
+});
+
+routerExercises.get("/next/:index", async (req, res) => {
+	const { index } = req.params;
+	const lang = req.query.lang || "es";
+
+	try {
+		// Obtener todos los ejercicios guiados (ordenados por la secuencia)
+		const exercises = await Exercise.find({ language: lang });
+
+		// Representaciones en orden guiado
+		const representations = ["ICONIC", "MIXED", "GLOBAL", "SYMBOLIC"];
+		const guidedList = [];
+
+		representations.forEach(rep => {
+			exercises.forEach(ex => {
+				guidedList.push({ ...ex.toObject(), representation: rep});
+			});
+		});
+
+		const nextExercise = guidedList[parseInt(index) + 1] || null;
+
+		res.json(nextExercise);
+	} catch (e) {
+		res.status(500).json({ error: e.message });
+	}
 });
 
 routerExercises.get("/teacher", async (req, res) => {
