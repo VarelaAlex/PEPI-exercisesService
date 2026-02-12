@@ -140,6 +140,31 @@ routerExercises.get("/teacher", async (req, res) => {
 	}
 });
 
+routerExercises.get("/:exerciseId", async (req, res) => {
+
+	let response = await authenticateToken(req, res);
+	let jsonData = await response?.json();
+	if ( response?.ok ) {
+		let exerciseId = req.params.exerciseId;
+		try {
+			let exerciseResponse = await Exercise.findById(exerciseId);
+			if ( !exerciseResponse ) {
+				return res.status(404).json({ message: "Exercise not found" });
+			}
+			if ( parseInt(exerciseResponse.teacherId) === parseInt(jsonData.user.id) ) {
+				return res.status(200).json(exerciseResponse);
+			} else {
+				return res.status(401).json({ message: "This exercise is not yours" });
+			}
+		}
+		catch ( e ) {
+			return res.status(500).json({ error: { type: "internalServerError", message: e.message } });
+		}
+	} else {
+		return res.status(response.status).json({ error: jsonData.error });
+	}
+});
+
 routerExercises.put("/:exerciseId", async (req, res) => {
 
 	let response = await authenticateToken(req, res);
@@ -153,7 +178,7 @@ routerExercises.put("/:exerciseId", async (req, res) => {
 			if ( !exerciseResponse ) {
 				return res.status(404).json({ message: "Exercise not found" });
 			}
-			if ( exerciseResponse.teacherId === jsonData.user.id ) {
+			if ( parseInt(exerciseResponse.teacherId) === parseInt(jsonData.user.id) ) {
 				updated = await Exercise.findByIdAndUpdate(exerciseId, exercise, { new: true });
 				return res.status(200).json(updated);
 			} else {

@@ -8,38 +8,43 @@ let ExerciseSchema = mongoose.Schema({
     },
     category: {
         type: String,
-        required: [true, "category is required"]
+        required: [true, "category is required"],
+        uppercase: true
     },
     mainImage: {
-        type: String
+        type: String,
+        required: [true, "main image is required"],
     },
     definitionImage: {
-        type: String
+        type: String,
+        required: [true, "definition image is required"],
     },
     definitionText: {
         type: String,
+        required: [true, "definition text is required"],
         uppercase: true
     },
     ampliationImages: {
         type: [String],
-        default: undefined
+        required: [true, "ampliation images is required"],
+        uppercase: true
     },
     ampliationText: {
         type: [String],
-        uppercase: true,
-        default: undefined
+        required: [true, "ampliation text is required"],
+        uppercase: true
     },
     definitionPictogram: {
         type: String,
-        required: [true, "definitionPictogram is required"]
+        required: [true, "definition pictogram is required"]
     },
     ampliationPictogram: {
         type: String,
-        required: [true, "ampliationPictogram is required"]
+        required: [true, "ampliation pictogram is required"]
     },
     networkType: {
         type: String,
-        required: [true, "networkType is required"],
+        required: [true, "network type is required"],
         uppercase: true
     },
     representation: {
@@ -54,9 +59,6 @@ let ExerciseSchema = mongoose.Schema({
     },
     teacherId: {
         type: String
-    },
-    closedOrder: {
-        type: Number
     }
 });
 
