@@ -10,6 +10,10 @@ let FeedbackSchema = mongoose.Schema({
     networkType: {
         type: String,
     },
+    trainingMode: {
+        type: String,
+        enum: ['free', 'ruled']
+    },
     date: {
         type: Date
     },
