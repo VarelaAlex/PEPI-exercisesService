@@ -17,6 +17,9 @@ let FeedbackSchema = mongoose.Schema({
     date: {
         type: Date
     },
+    avatarVisible: {
+        type: Boolean
+    },
     phase1: {
         elapsedTime: {
             type: Number,
@@ -57,7 +60,7 @@ let FeedbackSchema = mongoose.Schema({
         semanticError: {
             type: Number
         },
-        orderError:{
+        orderError: {
             type: Number
         }
     },
@@ -101,7 +104,7 @@ let FeedbackSchema = mongoose.Schema({
         semanticError: {
             type: Number
         },
-        orderError:{
+        orderError: {
             type: Number
         }
     },
