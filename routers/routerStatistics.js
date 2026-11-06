@@ -3,6 +3,90 @@ const Feedback = require("../models/Feedback.model");
 
 const routerStatistics = express.Router();
 
+const getUsersServiceData = async (req, path) => {
+	let response;
+	try {
+		response = await fetch(`${process.env.USERS_SERVICE_URL}${path}`, {
+			method: "GET",
+			headers: { Authorization: req.get("Authorization") }
+		});
+	} catch (error) {
+		throw Object.assign(new Error("Users service unavailable"), { status: 502 });
+	}
+
+	if (!response.ok) {
+		throw Object.assign(new Error("Requested resource not found or not accessible"), {
+			status: [401, 403, 404].includes(response.status) ? response.status : 502
+		});
+	}
+
+	return response.json();
+};
+
+const respondExportError = (res, error) => {
+	const status = error.status || 500;
+	return res.status(status).json({
+		error: {
+			type: status === 404 ? "notFound" : "internalServerError",
+			message: error.message
+		}
+	});
+};
+
+routerStatistics.get("/export/classroom/:classroomId", async (req, res) => {
+	try {
+		const classrooms = await getUsersServiceData(req, "/classrooms/list");
+		const classroom = classrooms.find(item => String(item.id) === req.params.classroomId);
+		if (!classroom) {
+			return res.status(404).json({ error: { type: "notFound" } });
+		}
+
+		let students = [];
+		try {
+			students = await getUsersServiceData(req, `/students/list/${encodeURIComponent(classroom.name)}`);
+		} catch (error) {
+			if (error.status !== 404) throw error;
+		}
+
+		const studentNames = new Map(students.map(student => [
+			String(student.id),
+			[student.name, student.lastName].filter(Boolean).join(" ") || student.username || ""
+		]));
+		const feedbacks = await Feedback.find({ "student.classroomId": req.params.classroomId });
+
+		return res.status(200).json({
+			name: classroom.name,
+			feedbacks: feedbacks.map(feedback => {
+				const record = typeof feedback.toObject === "function" ? feedback.toObject() : feedback;
+				return {
+					...record,
+					studentName: studentNames.get(String(record.student?.studentId)) || ""
+				};
+			})
+		});
+	} catch (error) {
+		return respondExportError(res, error);
+	}
+});
+
+routerStatistics.get("/export/student/:studentId", async (req, res) => {
+	try {
+		const student = await getUsersServiceData(req, `/students/${encodeURIComponent(req.params.studentId)}`);
+		const feedbacks = await Feedback.find({ "student.studentId": req.params.studentId });
+		const studentName = [student.name, student.lastName].filter(Boolean).join(" ") || student.username || "";
+
+		return res.status(200).json({
+			name: studentName,
+			feedbacks: feedbacks.map(feedback => {
+				const record = typeof feedback.toObject === "function" ? feedback.toObject() : feedback;
+				return { ...record, studentName };
+			})
+		});
+	} catch (error) {
+		return respondExportError(res, error);
+	}
+});
+
 routerStatistics.post("/", async (req, res) => {
 
 	let { feedback } = req.body;
